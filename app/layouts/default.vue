@@ -1,6 +1,15 @@
 <script lang="ts" setup>
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { authClient } from '~/lib/auth-client'
+
 const route = useRoute()
+const router = useRouter()
+
+const session = authClient.useSession()
+
+console.log(`SESSION: `, session?.value)
+
+const sessionValue = computed(() => session?.value)
 
 const navigations = computed<NavigationMenuItem[]>(() => [{
   label: 'Home',
@@ -13,6 +22,21 @@ const navigations = computed<NavigationMenuItem[]>(() => [{
   icon: 'i-lucide-box',
   active: route.path === '/todo'
 }])
+
+const userMenuItems = computed(() => [[{
+  // label: session.data.value?.user?.email || 'User',
+  label: 'User',
+  slot: 'account',
+  disabled: true,
+}], [{
+  label: 'Logout',
+  icon: 'i-lucide-log-out',
+  color: 'error' as const,
+  onSelect: async () => {
+    await authClient.signOut()
+    router.push('/login')
+  },
+}]])
 </script>
 
 <template>
@@ -51,7 +75,12 @@ const navigations = computed<NavigationMenuItem[]>(() => [{
           <UButton color="neutral" variant="ghost" to="https://github.com/firdoesdev/todo-apps-nuxt" target="_blank"
             icon="i-simple-icons-github" aria-label="GitHub" />
         </UTooltip>
-        <UTooltip text="Login">
+
+        <!-- User menu: show dropdown when logged in, login button when not -->
+        <UDropdownMenu v-if="sessionValue" :items="userMenuItems">
+          <UButton color="neutral" variant="ghost" :label="sessionValue.data?.user.email" />
+        </UDropdownMenu>
+        <UTooltip v-else text=" Login">
           <ULink to="/login" label="Login">
             <UButton color="neutral" variant="ghost" icon="i-lucide-user" aria-label="Login" />
           </ULink>
