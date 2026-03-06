@@ -2,11 +2,7 @@
 import { h, resolveComponent } from "vue";
 import type { TableColumn, FormSubmitEvent } from "@nuxt/ui";
 import type { Column } from "@tanstack/vue-table";
-import {
-  todoCreateSchema,
-  todoStatusOptions,
-  type TodoCreateInput,
-} from "./todo";
+import { type TodoCreateInput } from "./create/schema";
 
 // ─── Resolve Nuxt UI components for h() render ───
 const UCheckbox = resolveComponent("UCheckbox");
@@ -55,6 +51,12 @@ const limitOptions = [
   { label: "20 / page", value: 20 },
   { label: "50 / page", value: 50 },
 ];
+
+const TodoStatus = {
+  PENDING: "PENDING",
+  IN_PROGRESS: "IN_PROGRESS",
+  DONE: "DONE",
+} as const;
 
 // Debounced search
 const debouncedSearch = ref(search.value);
@@ -497,6 +499,12 @@ watch(
     });
   },
 );
+
+const todoStatusOptions = [
+  { label: "Pending", value: TodoStatus.PENDING },
+  { label: "In Progress", value: TodoStatus.IN_PROGRESS },
+  { label: "Done", value: TodoStatus.DONE },
+];
 
 // ─── Filter options for dropdown ───
 const statusFilterOptions = [

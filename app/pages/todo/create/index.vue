@@ -5,7 +5,7 @@ import {
   todoCreateSchema,
   todoStatusOptions,
   type TodoCreateInput,
-} from "./todo";
+} from "./schema";
 
 const toast = useToast();
 const router = useRouter();
