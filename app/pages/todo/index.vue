@@ -12,6 +12,7 @@ const UCheckbox = resolveComponent("UCheckbox");
 const UBadge = resolveComponent("UBadge");
 const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
+const USwitch = resolveComponent("USwitch");
 
 // ─── Types ───
 interface Todo {
@@ -243,6 +244,36 @@ function getStatusLabel(status: string) {
   );
 }
 
+// ─── Status Toggle ───
+const togglingStatus = ref<Record<string, boolean>>({});
+
+async function toggleStatus(todo: Todo, isDone: boolean) {
+  if (togglingStatus.value[todo.id]) return;
+  const nextStatus = isDone ? "DONE" : "IN_PROGRESS";
+  togglingStatus.value[todo.id] = true;
+  try {
+    await $fetch(`/api/todo/${todo.id}`, {
+      method: "PUT" as any,
+      body: { status: nextStatus },
+    });
+    toast.add({
+      title: `Status diubah ke ${getStatusLabel(nextStatus)}`,
+      color: "success",
+      icon: "i-lucide-circle-check",
+    });
+    await refresh();
+  } catch (e: any) {
+    toast.add({
+      title: "Gagal mengubah status",
+      description: e?.data?.statusMessage || "Terjadi kesalahan",
+      color: "error",
+      icon: "i-lucide-circle-x",
+    });
+  } finally {
+    delete togglingStatus.value[todo.id];
+  }
+}
+
 // ─── Table Columns ───
 const columnDefinitions: TableColumn<Todo>[] = [
   {
@@ -287,12 +318,35 @@ const columnDefinitions: TableColumn<Todo>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return h(
-        UBadge,
-        { variant: "subtle", color: getStatusColor(status) },
-        () => getStatusLabel(status),
-      );
+      const todo = row.original;
+
+      // PENDING: tampilkan badge saja tanpa switch
+      if (todo.status === "PENDING") {
+        return h(
+          UBadge,
+          { variant: "subtle", color: "warning" },
+          () => "Pending",
+        );
+      }
+
+      // IN_PROGRESS / DONE: tampilkan switch toggle
+      const isDone = todo.status === "DONE";
+      const isToggling = togglingStatus.value[todo.id];
+      return h("div", { class: "flex items-center gap-2" }, [
+        h(USwitch, {
+          modelValue: isDone,
+          "onUpdate:modelValue": (val: boolean) => toggleStatus(todo, val),
+          disabled: isToggling,
+          color: isDone ? "success" : "warning",
+        }),
+        h(
+          "span",
+          {
+            class: `text-xs font-medium ${isDone ? "text-green-500" : "text-yellow-500"}`,
+          },
+          isDone ? "Done" : "In Progress",
+        ),
+      ]);
     },
   },
   {
