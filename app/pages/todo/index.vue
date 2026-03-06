@@ -6,7 +6,7 @@ import {
   todoCreateSchema,
   todoStatusOptions,
   type TodoCreateInput,
-} from "~/utils/todo";
+} from "./todo";
 
 // ─── Resolve Nuxt UI components for h() render ───
 const UCheckbox = resolveComponent("UCheckbox");

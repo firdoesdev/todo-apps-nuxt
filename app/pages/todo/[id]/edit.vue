@@ -5,7 +5,7 @@ import {
   todoUpdateSchema,
   todoStatusOptions,
   type TodoUpdateInput,
-} from "~/utils/todo";
+} from "../todo";
 
 const toast = useToast();
 const route = useRoute();
