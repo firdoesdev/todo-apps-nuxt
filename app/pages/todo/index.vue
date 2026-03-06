@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from "vue";
 import type { TableColumn, FormSubmitEvent } from "@nuxt/ui";
+import type { Column } from "@tanstack/vue-table";
 import {
   todoCreateSchema,
   todoStatusOptions,
@@ -36,11 +37,18 @@ const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 
-// Search / Filter / Pagination
+// Search / Filter / Pagination / Sorting
 const search = ref((route.query.search as string) || "");
 const statusFilter = ref((route.query.status as string) || "ALL");
 const currentPage = ref(Number(route.query.page) || 1);
 const limit = ref(Number(route.query.limit) || 10);
+
+const sorting = ref([
+  {
+    id: (route.query.sortBy as string) || "createdAt",
+    desc: route.query.sortOrder ? route.query.sortOrder === "desc" : true,
+  },
+]);
 
 const limitOptions = [
   { label: "10 / page", value: 10 },
@@ -74,8 +82,10 @@ const {
     status: statusFilter.value !== "ALL" ? statusFilter.value : undefined,
     page: currentPage.value,
     limit: limit.value,
+    sortBy: sorting.value[0]?.id || "createdAt",
+    sortOrder: sorting.value[0]?.desc ? "desc" : "asc",
   })),
-  watch: [debouncedSearch, statusFilter, currentPage, limit],
+  watch: [debouncedSearch, statusFilter, currentPage, limit, sorting],
 });
 
 const todos = computed(() => response.value?.data ?? []);
@@ -274,6 +284,23 @@ async function toggleStatus(todo: Todo, isDone: boolean) {
   }
 }
 
+// ─── Sortable Header Helper ───
+function getSortableHeader(column: Column<Todo>, label: string) {
+  const isSorted = column.getIsSorted();
+  return h(UButton, {
+    color: "neutral",
+    variant: "ghost",
+    label,
+    icon: isSorted
+      ? isSorted === "asc"
+        ? "i-lucide-arrow-up-narrow-wide"
+        : "i-lucide-arrow-down-wide-narrow"
+      : "i-lucide-arrow-up-down",
+    class: "-mx-2.5",
+    onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+  });
+}
+
 // ─── Table Columns ───
 const columnDefinitions: TableColumn<Todo>[] = [
   {
@@ -297,7 +324,7 @@ const columnDefinitions: TableColumn<Todo>[] = [
   },
   {
     accessorKey: "title",
-    header: "Title",
+    header: ({ column }) => getSortableHeader(column, "Title"),
     cell: ({ row }) =>
       h("span", { class: "font-medium" }, row.getValue("title") as string),
   },
@@ -316,7 +343,7 @@ const columnDefinitions: TableColumn<Todo>[] = [
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: ({ column }) => getSortableHeader(column, "Status"),
     cell: ({ row }) => {
       const todo = row.original;
 
@@ -351,7 +378,7 @@ const columnDefinitions: TableColumn<Todo>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: "Dibuat",
+    header: ({ column }) => getSortableHeader(column, "Dibuat"),
     cell: ({ row }) => {
       const date = new Date(row.getValue("createdAt") as string);
       return date.toLocaleDateString("id-ID", {
@@ -447,8 +474,9 @@ const columns = computed(() => {
 
 // Sync states to URL
 watch(
-  [search, statusFilter, currentPage, limit, visibleColumnKeys],
-  ([s, st, cp, l, vck]) => {
+  [search, statusFilter, currentPage, limit, visibleColumnKeys, sorting],
+  ([s, st, cp, l, vck, sort]) => {
+    const currentSort = sort[0];
     router.replace({
       query: {
         ...route.query,
@@ -458,6 +486,13 @@ watch(
         limit: l,
         columns:
           vck.length === filterableColumns.length ? undefined : vck.join(","),
+        sortBy: currentSort?.id !== "createdAt" ? currentSort?.id : undefined,
+        sortOrder:
+          currentSort?.id === "createdAt" && currentSort?.desc !== false
+            ? undefined
+            : currentSort?.desc
+              ? "desc"
+              : "asc",
       },
     });
   },
@@ -539,7 +574,9 @@ const statusFilterOptions = [
     <!-- Table -->
     <div class="border border-default rounded-lg overflow-hidden">
       <UTable
+        v-model:sorting="sorting"
         v-model:row-selection="rowSelection"
+        :sorting-options="{ manualSorting: true }"
         :data="todos"
         :columns="columns"
         :loading="isLoading"
