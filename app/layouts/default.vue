@@ -48,7 +48,7 @@ const userMenuItems = computed(() => [
 </script>
 
 <template>
-  <UApp>
+  <div>
     <UHeader
       :toggle="{
         color: 'primary',
@@ -136,5 +136,5 @@ const userMenuItems = computed(() => [
     <UContainer>
       <slot />
     </UContainer>
-  </UApp>
+  </div>
 </template>

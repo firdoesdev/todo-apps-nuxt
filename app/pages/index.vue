@@ -1,9 +1,7 @@
-<script lang="ts" setup>
-
-</script>
+<script lang="ts" setup></script>
 
 <template>
-  <UContainer>
+  <div>
     <h1>Home</h1>
-  </UContainer>
+  </div>
 </template>
